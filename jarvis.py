@@ -1,123 +1,98 @@
-# ========================================
-# JARVIS AI ASSISTANT - COMPLETE WORKING VERSION
-# JUST RUN: python jarvis.py
-# ========================================
-
+# JARVIS WITH VOICE - STEP 7 COMPLETE
+import speech_recognition as sr
 import pyttsx3
 import datetime
 import webbrowser
 import os
-import requests
 import random
-import subprocess
 
-print("🚀 JARVIS LOADING...")
+print("🔊 VOICE JARVIS LOADING...")
 
-class Jarvis:
+class VoiceJarvis:
     def __init__(self):
-        # Initialize Text-to-Speech
-        self.tts_engine = pyttsx3.init()
-        voices = self.tts_engine.getProperty('voices')
-        
-        # Use female voice if available
+        # Text-to-Speech
+        self.tts = pyttsx3.init()
+        voices = self.tts.getProperty('voices')
         if len(voices) > 1:
-            self.tts_engine.setProperty('voice', voices[1].id)
-        self.tts_engine.setProperty('rate', 170)
+            self.tts.setProperty('voice', voices[1].id)  # Female
+        self.tts.setProperty('rate', 170)
         
-        print("✅ JARVIS VOICE READY!")
+        # Speech-to-Text
+        self.recognizer = sr.Recognizer()
+        self.microphone = sr.Microphone()
+        
+        # Calibrate mic
+        with self.microphone as source:
+            self.recognizer.adjust_for_ambient_noise(source)
+        
+        print("✅ VOICE JARVIS READY!")
+        self.speak("Voice JARVIS activated!")
     
     def speak(self, text):
-        """JARVIS SPEAKS"""
         print(f"🤖 JARVIS: {text}")
-        self.tts_engine.say(text)
-        self.tts_engine.runAndWait()
+        self.tts.say(text)
+        self.tts.runAndWait()
     
-    def get_time(self):
-        now = datetime.datetime.now()
-        return now.strftime("%I:%M %p")
+    def listen(self):
+        try:
+            print("👂 Listening...")
+            with self.microphone as source:
+                audio = self.recognizer.listen(source, timeout=3, phrase_time_limit=5)
+            
+            text = self.recognizer.recognize_google(audio).lower()
+            print(f"🎤 You said: {text}")
+            return text
+        except sr.UnknownValueError:
+            return ""
+        except sr.RequestError:
+            self.speak("Speech service down")
+            return ""
+        except:
+            return ""
     
-    def get_date(self):
-        now = datetime.datetime.now()
-        return now.strftime("%A, %B %d, %Y")
-    
-    def process_command(self, command):
-        command = command.lower()
-        
-        # TIME
+    def process(self, command):
         if "time" in command:
-            return f"Current time is {self.get_time()}"
+            now = datetime.datetime.now()
+            return f"Current time {now.strftime('%I:%M %p')}"
         
-        # DATE  
         if "date" in command:
-            return f"Today is {self.get_date()}"
+            now = datetime.datetime.now()
+            return f"Today {now.strftime('%B %d')}"
         
-        # WEATHER (Simple)
-        if "weather" in command:
-            return "The weather is perfect for coding!"
-        
-        # OPEN APPS
         if "notepad" in command:
             os.system("notepad")
-            return "Opening Notepad"
+            return "Opening notepad"
         
         if "calculator" in command:
             os.system("calc")
-            return "Opening Calculator"
+            return "Opening calculator"
         
-        # WEB SEARCH
-        if "search" in command or "google" in command:
-            query = command.replace("search", "").replace("google", "").strip()
-            webbrowser.open(f"https://google.com/search?q={query}")
-            return f"Searching Google for {query}"
+        if "google" in command:
+            webbrowser.open("https://google.com")
+            return "Opening Google"
         
-        # YOUTUBE
         if "youtube" in command:
-            query = command.replace("youtube", "").strip()
-            webbrowser.open(f"https://youtube.com/results?search_query={query}")
-            return f"Opening YouTube"
+            webbrowser.open("https://youtube.com")
+            return "Opening YouTube"
         
-        # JOKE
         if "joke" in command:
-            jokes = [
-                "Why don't scientists trust atoms? Because they make up everything!",
-                "Why did the scarecrow win an award? He was outstanding in his field!",
-                "I'm reading a book about anti-gravity. It's impossible to put down!"
-            ]
+            jokes = ["Why programmers hate nature? Too many bugs!"]
             return random.choice(jokes)
         
-        # WEBSITES
-        if "facebook" in command:
-            webbrowser.open("https://facebook.com")
-            return "Opening Facebook"
-        
-        if "github" in command:
-            webbrowser.open("https://github.com")
-            return "Opening GitHub"
-        
-        # EXIT
-        if any(word in command for word in ["exit", "quit", "bye", "goodbye"]):
-            return "JARVIS signing off! Goodbye sir!"
-        
-        # DEFAULT
-        return "Commands: time, date, notepad, calculator, search [topic], youtube [song], joke, exit"
+        return "Try time, date, notepad, calculator, google, youtube, joke"
     
     def run(self):
-        self.speak("JARVIS online and ready sir!")
+        self.speak("Say JARVIS then command")
         
         while True:
-            print("\n" + "="*50)
-            command = input("👤 YOU: ").strip()
+            command = self.listen()
             
-            if command.lower() == "exit":
-                self.speak("Goodbye sir!")
-                break
-            
-            response = self.process_command(command)
-            self.speak(response)
-        
-        print("👋 JARVIS OFFLINE")
+            if "jarvis" in command:
+                self.speak("Yes sir?")
+                response = self.process(command)
+                self.speak(response)
 
-# START JARVIS
+# RUN
 if __name__ == "__main__":
-    jarvis = Jarvis()
+    jarvis = VoiceJarvis()
     jarvis.run()
